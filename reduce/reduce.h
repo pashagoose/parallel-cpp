@@ -3,7 +3,7 @@
 #include <atomic>
 #include <cstddef>
 #include <thread>
-#include<vector>
+#include <vector>
 
 template <typename RandomAccessIterator, class T, class Func>
 T parallel_reduce(RandomAccessIterator begin, RandomAccessIterator end,
