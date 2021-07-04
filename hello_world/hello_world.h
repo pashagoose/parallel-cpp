@@ -18,6 +18,7 @@ class HelloWorld {
 
   void SayHello(std::ostream& os) {
       std::vector<std::thread> threads;
+      std::mutex control_output;
       for (size_t i = 0; i < n_threads_; ++i) {
         threads.emplace_back([&] {
           control_output.lock();
@@ -32,5 +33,4 @@ class HelloWorld {
 
  private:
   size_t n_threads_;
-  std::mutex control_output;
 };
