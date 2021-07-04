@@ -21,9 +21,8 @@ class HelloWorld {
       std::mutex control_output;
       for (size_t i = 0; i < n_threads_; ++i) {
         threads.emplace_back([&] {
-          control_output.lock();
+          std::unique_lock lock(control_output);
           os << kHelloPrefix << std::this_thread::get_id() << '\n';
-          control_output.unlock();
         });
       }
       for (auto& th : threads) {
@@ -32,5 +31,5 @@ class HelloWorld {
   }
 
  private:
-  size_t n_threads_;
+  const size_t n_threads_;
 };
