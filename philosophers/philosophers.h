@@ -60,6 +60,7 @@ class Philosopher {
 
  private:
   const size_t id_;
-  Fork *lfork_, *rfork_;
+  Fork* lfork_;
+  Fork* rfork_;
 };
 
