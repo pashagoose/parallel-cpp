@@ -10,22 +10,22 @@ class Deadlock {
   }
 
   void ThreadOne() {
-    mutex1.lock();
+    mutex1_.lock();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    mutex2.lock();
-    mutex2.unlock();
-    mutex1.unlock();
+    mutex2_.lock();
+    mutex2_.unlock();
+    mutex1_.unlock();
   }
 
   void ThreadTwo() {
-    mutex2.lock();
+    mutex2_.lock();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    mutex1.lock();
-    mutex1.unlock();
-    mutex2.unlock();
+    mutex1_.lock();
+    mutex1_.unlock();
+    mutex2_.unlock();
   }
 
  private:
-  std::mutex mutex1, mutex2;
+  std::mutex mutex1_, mutex2_;
 };
 
