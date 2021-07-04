@@ -31,24 +31,36 @@ class Fork {
 
 class Philosopher {
  public:
-  Philosopher(size_t /*id*/, Fork* /*left_fork*/, Fork* /*right_fork*/) {
-    // Your code
+  Philosopher(size_t id, Fork* left_fork, Fork* right_fork) :
+                id_(id),
+                lfork_(left_fork),
+                rfork_(right_fork)
+  {  
   }
 
   size_t Id() const {
-    // Your code
-    return -1;
+    return id_;
   }
 
   void Eat() {
-    // Your code
+    while (true) {
+      lfork_->Get();
+      if (rfork_->TryGet()) {
+        break;
+      } else {
+        lfork_->Put();
+      }
+    }
   }
 
   void Think() {
-    // Your code
+    lfork_->Put();
+    rfork_->Put();
   }
 
  private:
-  // Your code
+  const size_t id_;
+  Fork* lfork_;
+  Fork* rfork_;
 };
 
