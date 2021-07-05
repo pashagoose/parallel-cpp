@@ -22,7 +22,14 @@ T parallel_reduce(RandomAccessIterator begin, RandomAccessIterator end,
         for (auto it = piece_begin; it != piece_end; ++it) {
             local_res = func(local_res, *it);
         }
-        global_res.store(func(global_res.load(), local_res));
+        T prev_res = global_res;
+        for(;;) {
+            if (global_res.compare_exchange_weak(prev_res, func(prev_res, local_res))) {
+                break;
+            } else {
+                prev_res = global_res;
+            }
+        }
     }, begin + i * block_len, begin + std::min(len, (i + 1) * block_len));
   }
   for (auto& th : threads) {
