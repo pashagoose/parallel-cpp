@@ -15,7 +15,7 @@ class ThreadSafeQueue {
   void Push(const T& value) {
     std::unique_lock locker(block_);
     queue_.push(value);
-    not_empty_condition_.notify_all();
+    not_empty_condition_.notify_one();
   }
 
   T Pop() {
