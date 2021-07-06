@@ -33,7 +33,6 @@ class ThreadSafeVector {
  private:
   mutable std::shared_mutex block_;
   std::mutex write_block_;
-  std::mutex pb_block_;
   std::vector<T> vector_;
 };
 
