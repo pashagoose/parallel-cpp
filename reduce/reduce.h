@@ -1,7 +1,7 @@
 #pragma once
 
-#include <atomic>
 #include <cstddef>
+#include <numeric>
 #include <thread>
 #include <vector>
 
@@ -15,26 +15,19 @@ T parallel_reduce(RandomAccessIterator begin, RandomAccessIterator end,
     block_len = 1;
   }
   std::vector<std::thread> threads;
-  std::atomic<T> global_res = initial_value;
+  std::vector<T> results(n_threads, initial_value);
   for (size_t i = 0; i < n_threads; ++i) {
-    threads.emplace_back([&] (RandomAccessIterator piece_begin, RandomAccessIterator piece_end) {
+    threads.emplace_back([&] (RandomAccessIterator piece_begin, RandomAccessIterator piece_end, size_t ind_res) {
         T local_res = initial_value;
         for (auto it = piece_begin; it != piece_end; ++it) {
             local_res = func(local_res, *it);
         }
-        T prev_res = global_res;
-        for(;;) {
-            if (global_res.compare_exchange_weak(prev_res, func(prev_res, local_res))) {
-                break;
-            } else {
-                prev_res = global_res;
-            }
-        }
-    }, begin + i * block_len, begin + std::min(len, (i + 1) * block_len));
+        results[ind_res] = local_res;
+    }, begin + i * block_len, begin + std::min(len, (i + 1) * block_len), i);
   }
   for (auto& th : threads) {
     th.join();
   }
-  return global_res;
+  return std::reduce(results.begin(), results.end(), initial_value, func);
 }
 
