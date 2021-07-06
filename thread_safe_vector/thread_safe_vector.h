@@ -22,12 +22,16 @@ class ThreadSafeVector {
   }
 
   void PushBack(const T& value) {
-    std::unique_lock<std::shared_mutex> w_lock(block_);
+    std::shared_lock<std::shared_mutex> w_lock(block_);
+    if (Size() < vector_.capacity()) {
+      
+    }
     vector_.push_back(value);
   }
 
  private:
   mutable std::shared_mutex block_;
+  std::mutex pb_block_;
   std::vector<T> vector_;
 };
 
