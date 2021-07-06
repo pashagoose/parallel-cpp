@@ -12,17 +12,17 @@ class ThreadSafeVector {
   }
 
   T operator[](size_t index) const {
-    std::shared_lock r_lock(block_);
+    std::shared_lock<std::shared_mutex> r_lock(block_);
     return vector_[index];
   }
 
   size_t Size() const {
-    std::shared_lock r_lock(block_);
+    std::shared_lock<std::shared_mutex> r_lock(block_);
     return vector_.size();
   }
 
   void PushBack(const T& value) {
-    std::unique_lock w_lock(block_);
+    std::unique_lock<std::shared_mutex> w_lock(block_);
     vector_.push_back(value);
   }
 
