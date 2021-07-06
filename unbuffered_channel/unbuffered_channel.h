@@ -24,15 +24,16 @@ class UnbufferedChannel{
         assert(!placed_);
         placed_ = true;
         val_ = value;
-        placed_val_.notify_one();
+        ready_to_ship_.notify_one();
       }
   }
 
   std::optional<T> Recv() {
       std::unique_lock locker(block_);
       ++receivers_pending_;
+      assert(!placed_);
       ready_to_get_.notify_one();
-      placed_val_.wait(locker, [&] {
+      ready_to_ship_.wait(locker, [&] {
         return (closed_ || placed_);
       });
       if (closed_) {
@@ -47,7 +48,7 @@ class UnbufferedChannel{
   void Close() {
     std::unique_lock locker(block_);
     closed_ = true;
-    placed_val_.notify_all();
+    ready_to_ship_.notify_all();
     ready_to_get_.notify_all();
   }
 
@@ -57,7 +58,7 @@ class UnbufferedChannel{
   bool closed_ = false;
   bool placed_ = false;
   std::mutex block_;
-  std::condition_variable placed_val_;
+  std::condition_variable ready_to_ship_;
   std::condition_variable ready_to_get_;
 };
 
