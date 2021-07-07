@@ -1,11 +1,9 @@
 #pragma once
 
-#include <cassert>
 #include <condition_variable>
 #include <exception>
 #include <mutex>
 #include <optional>
-
 
 template <typename T>
 class UnbufferedChannel{
@@ -14,51 +12,53 @@ class UnbufferedChannel{
   }
 
   void Send(const T& value) {
-      std::unique_lock locker(block_);
-      ready_to_get_.wait(locker, [&] {
-        return (closed_ || receivers_pending_);
-      });
+      std::unique_lock s_lock(sender_block_);
+      std::unique_lock locker(all_block_);
       if (closed_) {
         throw std::runtime_error("Channel is closed");
-      } else {
-        assert(!placed_);
-        placed_ = true;
-        val_ = value;
-        ready_to_ship_.notify_one();
+      }
+      placed_ = true;
+      val_ptr_ = &value;
+      ready_to_ship_.notify_one();
+      grab_.wait(locker, [&] {
+        return !placed_ || closed_;
+      });
+      if (placed_) {
+        throw std::runtime_error("Channel is closed");
       }
   }
 
   std::optional<T> Recv() {
-      std::unique_lock locker(block_);
-      ++receivers_pending_;
-      assert(!placed_);
-      ready_to_get_.notify_one();
+      std::unique_lock r_lock(receiver_block_);
+      std::unique_lock locker(all_block_);
       ready_to_ship_.wait(locker, [&] {
-        return (closed_ || placed_);
+        return placed_ || closed_;
       });
       if (closed_) {
         return std::nullopt;
-      } else {
-        placed_ = false;
-        --receivers_pending_;
-        return val_;
       }
+      placed_ = false;
+      std::optional<T> ret_opt(*val_ptr_);
+      grab_.notify_one();
+      return ret_opt;
   }
 
   void Close() {
-    std::unique_lock locker(block_);
+    std::unique_lock locker(all_block_);
     closed_ = true;
     ready_to_ship_.notify_all();
-    ready_to_get_.notify_all();
+    grab_.notify_all();
   }
 
  private:
-  std::optional<T> val_;
-  size_t receivers_pending_ = 0;
+  T const *val_ptr_;
   bool closed_ = false;
   bool placed_ = false;
-  std::mutex block_;
+  std::mutex all_block_;
+  std::mutex sender_block_;
+  std::mutex receiver_block_;
   std::condition_variable ready_to_ship_;
-  std::condition_variable ready_to_get_;
+  std::condition_variable grab_;
+
 };
 
