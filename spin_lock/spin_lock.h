@@ -9,17 +9,17 @@ class SpinLock {
   }
 
   void Lock() {
-    while (locked.exchange(true)) {
+    while (locked_.load() || locked_.exchange(true)) {
       // me, waiting for toilet
       std::this_thread::yield();
     }
   }
 
   void Unlock() {
-    locked.store(false);
+    locked_.store(false);
   }
 
  private:
-  std::atomic<bool> locked = false;
+  std::atomic<bool> locked_ = false;
 };
 
