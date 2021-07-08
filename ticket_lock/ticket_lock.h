@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <thread>
 
 class TicketLock {
  public:
@@ -7,14 +9,18 @@ class TicketLock {
   }
 
   void Lock() {
-    // Your code
+    size_t cur_id = tickets_cnt.fetch_add(1);
+    while (now_serving.load() != cur_id) {
+      std::this_thread::yield();
+    }
   }
 
   void Unlock() {
-    // Your code
+    now_serving.fetch_add(1);
   }
 
  private:
-  // Your code
+  std::atomic<size_t> tickets_cnt = 0;
+  std::atomic<size_t> now_serving = 0;
 };
 
