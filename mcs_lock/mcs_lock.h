@@ -4,6 +4,9 @@
 #include <thread>
 
 class Node {
+ public:
+  Node() : acquired(false), next(nullptr) {}
+
  private:
   std::atomic<bool> acquired;
   std::atomic<Node*> next;
@@ -13,19 +16,35 @@ class Node {
 
 class MCSLock {
  public:
-  MCSLock() {
-  }
+  MCSLock() = default;
 
   void Lock() {
-    // Your code
+    cur_node_.next.store(nullptr);
+    cur_node_.acquired.store(false);
+    Node *prev_node_ = tail_.exchange(&cur_node_);
+    if (prev_node_) {
+      prev_node_->next.store(&cur_node_);
+    } else {
+      cur_node_.acquired.store(true);
+    }
+    while (!cur_node_.acquired.load()) {
+      std::this_thread::yield();
+    }
   }
 
   void Unlock() {
-    // Your code
+    Node* cur_node_ptr = &cur_node_;
+    if (tail_.compare_exchange_weak(cur_node_ptr, nullptr)) {
+      return;
+    }
+    while (!cur_node_.next.load()) {
+      // chill
+    }
+    cur_node_.next.load()->acquired.store(true);
   }
 
  private:
   std::atomic<Node*> tail_;
-  thread_local std::atomic<Node*> cur_node_;
+  thread_local static Node cur_node_;
 };
 
