@@ -3,9 +3,11 @@
 #include <atomic>
 #include <thread>
 
+#include <iostream>
+
 class Node {
  public:
-  Node() : acquired(false), next(nullptr) {}
+  Node() : acquired(true), next(nullptr) {}
 
  private:
   std::atomic<bool> acquired;
@@ -19,32 +21,30 @@ class MCSLock {
   MCSLock() = default;
 
   void Lock() {
-    cur_node_.next.store(nullptr);
-    cur_node_.acquired.store(false);
-    Node *prev_node_ = tail_.exchange(&cur_node_);
+    node_.next.store(nullptr);
+    node_.acquired.store(true);
+    Node *prev_node_ = tail_.exchange(&node_);
     if (prev_node_) {
-      prev_node_->next.store(&cur_node_);
-    } else {
-      cur_node_.acquired.store(true);
+      prev_node_->next.store(&node_);
+      node_.acquired.store(false);
     }
-    while (!cur_node_.acquired.load()) {
+    while (!node_.acquired.load()) {
       std::this_thread::yield();
     }
   }
 
   void Unlock() {
-    Node* cur_node_ptr = &cur_node_;
-    if (tail_.compare_exchange_weak(cur_node_ptr, nullptr)) {
+    Node* node_ptr = &node_;
+    if (tail_.compare_exchange_weak(node_ptr, nullptr)) {
       return;
     }
-    while (!cur_node_.next.load()) {
+    while (!node_.next.load()) {
       // chill
     }
-    cur_node_.next.load()->acquired.store(true);
+    node_.next.load()->acquired.store(true);
   }
 
  private:
-  std::atomic<Node*> tail_;
-  thread_local static Node cur_node_;
+  std::atomic<Node*> tail_{nullptr};
+  thread_local static inline Node node_ = Node();
 };
-
