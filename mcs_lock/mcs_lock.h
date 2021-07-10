@@ -3,19 +3,6 @@
 #include <atomic>
 #include <thread>
 
-#include <iostream>
-
-class Node {
- public:
-  Node() : acquired(true), next(nullptr) {}
-
- private:
-  std::atomic<bool> acquired;
-  std::atomic<Node*> next;
-
-  friend class MCSLock;
-};
-
 class MCSLock {
  public:
   MCSLock() = default;
@@ -45,6 +32,14 @@ class MCSLock {
   }
 
  private:
+
+  struct Node {
+    std::atomic<bool> acquired;
+    std::atomic<Node*> next;
+
+    Node() : acquired(true), next(nullptr) {}
+  };
+
   std::atomic<Node*> tail_{nullptr};
   thread_local static inline Node node_ = Node();
 };
