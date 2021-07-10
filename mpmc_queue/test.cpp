@@ -114,3 +114,4 @@ TEST(MPMCQueue, NoLock) {
   ASSERT_EQ(*q.Pop(), 17);
   ASSERT_EQ(q.Pop(), std::nullopt);
 }
+
