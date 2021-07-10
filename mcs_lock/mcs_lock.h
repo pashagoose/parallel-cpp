@@ -25,8 +25,8 @@ class MCSLock {
     node_.acquired.store(true);
     Node *prev_node_ = tail_.exchange(&node_);
     if (prev_node_) {
-      prev_node_->next.store(&node_);
       node_.acquired.store(false);
+      prev_node_->next.store(&node_);
     }
     while (!node_.acquired.load()) {
       std::this_thread::yield();
