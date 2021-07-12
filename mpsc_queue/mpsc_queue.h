@@ -20,8 +20,8 @@ class MPSCQueue {
   void Push(const T& value) {
     Node* ptr_node = new Node(value);
     for (;;) {
-      ptr_node->next.store(head_.load());
-      Node* cpy = ptr_node->next.load();
+      ptr_node->next = head_.load();
+      Node* cpy = ptr_node->next;
       if (head_.compare_exchange_weak(cpy, ptr_node)) {
         return;
       }
@@ -34,12 +34,12 @@ class MPSCQueue {
       if (!current_head) {
         return std::nullopt;
       }
-      if (head_.compare_exchange_weak(current_head, current_head->next.load())) {
+      if (head_.compare_exchange_weak(current_head, current_head->next)) {
         break;
       }
       current_head = head_.load();
     }
-    std::optional<T> result(current_head->element.load());
+    std::optional<T> result(current_head->element);
     delete current_head;
     return result;
   }
@@ -47,8 +47,8 @@ class MPSCQueue {
  private:
   
   struct Node {
-    std::atomic<Node*> next;
-    std::atomic<T> element;
+    Node* next;
+    T element;
 
     Node() : next(nullptr) {}
 
