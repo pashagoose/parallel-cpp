@@ -22,12 +22,7 @@ class RWSpinLock {
   }
 
   void UnlockRead() {
-    for (;;) {
-      auto copy_cnt = counter_.load();
-      if (counter_.compare_exchange_weak(copy_cnt, copy_cnt - 2)) {
-        break;
-      }
-    }
+    counter_.fetch_sub(2);
   }
 
   void LockWrite() {
