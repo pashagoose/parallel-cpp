@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <thread>
 
 class RWSpinLock {
  public:
@@ -7,22 +9,43 @@ class RWSpinLock {
   }
 
   void LockRead() {
-    // Your code
+    for (;;) {
+      auto copy_cnt = counter_.load();
+      if (copy_cnt & 1) {
+        std::this_thread::yield();
+        continue;
+      }
+      if (counter_.compare_exchange_weak(copy_cnt, copy_cnt + 2)) {
+        break;
+      }
+    }
   }
 
   void UnlockRead() {
-    // Your code
+    counter_.fetch_sub(2);
   }
 
   void LockWrite() {
-    // Your code
+    for (;;) {
+      auto copy_cnt = counter_.load();
+      if (copy_cnt & 1) {
+        std::this_thread::yield();
+        continue;
+      }
+      if (counter_.compare_exchange_weak(copy_cnt, copy_cnt + 1)) {
+        break;
+      }
+    }
+    while (counter_.load() != 1) {
+      std::this_thread::yield();
+    }
   }
 
   void UnlockWrite() {
-    // Your code
+    counter_.store(0);
   }
 
  private:
-  // Your code
+  std::atomic<uint64_t> counter_ = 0;
 };
 
